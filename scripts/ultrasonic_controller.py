@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+import sys  # Import sys to flush output
 
 # Define GPIO pins
 TRIGGER_PIN = 23  # Replace with your trigger pin (e.g., GPIO23)
@@ -17,10 +18,12 @@ def measure_distance():
     GPIO.output(TRIGGER_PIN, GPIO.LOW)
 
     # Wait for the echo pin to go HIGH
+    start_time = time.time()
     while GPIO.input(ECHO_PIN) == GPIO.LOW:
         start_time = time.time()
 
     # Wait for the echo pin to go LOW
+    end_time = time.time()
     while GPIO.input(ECHO_PIN) == GPIO.HIGH:
         end_time = time.time()
 
@@ -33,11 +36,12 @@ def measure_distance():
     return distance
 
 try:
-    print("Ultrasonic sensor started. Press Ctrl+C to stop.")
     while True:
         distance = measure_distance()
-        print(f"Distance: {distance:.2f} cm")
-        time.sleep(1)  # Wait 1 second before the next measurement
+        if distance <= 10:
+            print("hit", flush=True)  # Print "score" and flush the output
+            time.sleep(1.0)
+        time.sleep(0.01)  # Small delay to avoid excessive CPU usage
 
 except KeyboardInterrupt:
     print("\nExiting program.")
