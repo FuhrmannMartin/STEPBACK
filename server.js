@@ -1,14 +1,5 @@
 const WebSocket = require('ws');
-const Gpio = require('onoff').Gpio;
-
-// Try initializing GPIO pin 17 for output
-let led;
-try {
-  led = new Gpio(17, 'out'); // GPIO17 = physical pin 11
-} catch (err) {
-  console.error('Error initializing GPIO:', err.message);
-  process.exit(1);
-}
+const { spawn } = require('child_process'); // Import child_process module
 
 const wss = new WebSocket.Server({ port: 8765 });
 
@@ -24,26 +15,28 @@ wss.on('connection', function connection(ws) {
     if (text.toLowerCase() === 'shoot!') {
       console.log('Shooting LED!');
       try {
-        led.writeSync(1); // Turn on LED
+        // Run the Python script
+        const pythonProcess = spawn('python3', ['scripts/led_controller.py']);
+
+        // Handle output from the Python script
+        pythonProcess.stdout.on('data', (data) => {
+          console.log(`Python script output: ${data.toString()}`);
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+          console.error(`Python script error: ${data.toString()}`);
+        });
+
+        pythonProcess.on('close', (code) => {
+          console.log(`Python script exited with code ${code}`);
+        });
+
         setTimeout(() => {
-          led.writeSync(0); // Turn off LED after 500ms
           console.log('LED off');
         }, 500);
       } catch (e) {
-        console.error('GPIO error:', e.message);
+        console.error('Error running Python script:', e.message);
       }
     }
   });
-});
-
-// Graceful shutdown on Ctrl+C
-process.on('SIGINT', () => {
-  console.log('\nExiting, cleaning up GPIO...');
-  try {
-    led.writeSync(0);
-    led.unexport();
-  } catch (e) {
-    console.error('GPIO cleanup error:', e.message);
-  }
-  process.exit();
 });

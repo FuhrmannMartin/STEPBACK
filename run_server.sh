@@ -14,4 +14,4 @@ if [ -n "$PID" ]; then
 fi
 
 # Start the Node.js WebSocket server
-node server.js
+sudo node server.js
